@@ -5,20 +5,21 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(undefined); // undefined = loading
   const [product, setProduct] = useState("");
   const [features, setFeatures] = useState("");
   const [result, setResult] = useState("");
-  const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
 
-  // ✅ Session handling
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
       setUser(data.session?.user || null);
-    });
+    };
+
+    getSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -31,7 +32,6 @@ export default function Home() {
     };
   }, []);
 
-  // ✅ Redirect if not logged in
   useEffect(() => {
     if (user === null) {
       router.push("/login");
@@ -39,20 +39,12 @@ export default function Home() {
   }, [user]);
 
   const generate = async () => {
-    if (!user) return;
-
     if (!product || !features) {
       setResult("⚠️ Fill all fields");
       return;
     }
 
-    if (count >= 3) {
-      setResult("⚠️ Free limit reached (3 uses)");
-      return;
-    }
-
     setLoading(true);
-    setCount((prev) => prev + 1);
 
     try {
       const res = await fetch("/api/generate", {
@@ -72,19 +64,28 @@ export default function Home() {
     setLoading(false);
   };
 
-  if (!user) return null;
+  // ✅ SHOW LOADING (NO BLANK SCREEN)
+  if (user === undefined) {
+    return (
+      <div className="h-screen flex items-center justify-center text-white">
+        Loading...
+      </div>
+    );
+  }
+
+  // still redirecting
+  if (user === null) return null;
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center px-4">
-
       <div className="w-full max-w-xl bg-zinc-900 p-6 rounded-xl">
 
         <h1 className="text-2xl font-bold mb-4 text-center">
-          🚀 ConvertAI – Shopify Description Generator
+          🚀 ConvertAI
         </h1>
 
         <p className="text-green-400 text-sm mb-4 text-center">
-          Logged in as {user.email}
+          {user.email}
         </p>
 
         <input
