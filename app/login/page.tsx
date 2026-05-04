@@ -14,7 +14,7 @@ export default function Home() {
 
   const router = useRouter();
 
-  // ✅ Session handling
+  // 🔥 SESSION FIX
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
@@ -31,7 +31,7 @@ export default function Home() {
     };
   }, []);
 
-  // ✅ Redirect if not logged in
+  // 🔥 Redirect if not logged in
   useEffect(() => {
     if (user === null) {
       router.push("/login");
@@ -41,34 +41,24 @@ export default function Home() {
   const generate = async () => {
     if (!user) return;
 
-    if (!product || !features) {
-      setResult("⚠️ Fill all fields");
-      return;
-    }
-
     if (count >= 3) {
-      setResult("⚠️ Free limit reached (3 uses)");
+      setResult("⚠️ Free limit reached. Upgrade to Pro.");
       return;
     }
 
     setLoading(true);
-    setCount((prev) => prev + 1);
+    setCount(count + 1);
 
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ product, features }),
-      });
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ product, features }),
+    });
 
-      const data = await res.json();
-      setResult(data.text || "No result");
-    } catch {
-      setResult("Server error");
-    }
-
+    const data = await res.json();
+    setResult(data.text);
     setLoading(false);
   };
 
@@ -107,6 +97,8 @@ export default function Home() {
         >
           {loading ? "Generating..." : "Generate"}
         </button>
+
+      
 
         {result && (
           <div className="mt-4 bg-black p-3 rounded border border-gray-700">
